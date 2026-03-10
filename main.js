@@ -1,132 +1,156 @@
-'use strict';
+// -----------------------------
+// TAB NAVIGATION
+// -----------------------------
 
-//Opening or closing side bar
+const tabButtons = document.querySelectorAll('.nav-btn');
+const tabs = document.querySelectorAll('.tab');
 
-const elementToggleFunc = function (elem) { elem.classList.toggle("active"); }
+tabButtons.forEach(button => {
+  button.addEventListener('click', () => {
 
-const sidebar = document.querySelector("[data-sidebar]");
-const sidebarBtn = document.querySelector("[data-sidebar-btn]");
+    const target = button.getAttribute('data-tab');
 
-sidebarBtn.addEventListener("click", function() {elementToggleFunc(sidebar); })
+    tabs.forEach(tab => tab.classList.remove('active'));
+    tabButtons.forEach(btn => btn.classList.remove('active'));
 
-//Activating Modal-testimonial
+    document.getElementById(target).classList.add('active');
+    button.classList.add('active');
 
-const testimonialsItem = document.querySelectorAll('[data-testimonials-item]');
-const modalContainer = document.querySelector('[data-modal-container]');
-const modalCloseBtn = document.querySelector('[data-modal-close-btn]');
-const overlay = document.querySelector('[data-overlay]');
+  });
+});
 
-const modalImg = document.querySelector('[data-modal-img]');
-const modalTitle = document.querySelector('[data-modal-title]');
-const modalText = document.querySelector('[data-modal-text]');
 
-const testimonialsModalFunc = function () {
-    modalContainer.classList.toggle('active');
-    overlay.classList.toggle('active');
+// -----------------------------
+// GALLERY SYSTEM
+// -----------------------------
+
+const currentIndex = {};
+
+
+// highlight active thumbnail
+function highlightThumb(galleryNumber, index){
+
+  const thumbs = document.querySelectorAll(`#thumbs-${galleryNumber} img`);
+
+  thumbs.forEach(t => t.classList.remove("active-thumb"));
+
+  if(thumbs[index]){
+    thumbs[index].classList.add("active-thumb");
+  }
+
 }
 
-for (let i = 0; i < testimonialsItem.length; i++) {
-    testimonialsItem[i].addEventListener('click', function () {
-        modalImg.src = this.querySelector('[data-testimonials-avatar]').src;
-        modalImg.alt = this.querySelector('[data-testimonials-avatar]').alt;
-        modalTitle.innerHTML = this.querySelector('[data-testimonials-title]').innerHTML;
-        modalText.innerHTML = this.querySelector('[data-testimonials-text]').innerHTML;
 
-        testimonialsModalFunc();
-    })
-}
+// thumbnail click
+function switchImage(galleryNumber, src){
 
-//Activating close button in modal-testimonial
+  const mainImg = document.getElementById(`main-img-${galleryNumber}`);
+  const thumbs = document.querySelectorAll(`#thumbs-${galleryNumber} img`);
 
-modalCloseBtn.addEventListener('click', testimonialsModalFunc);
-overlay.addEventListener('click', testimonialsModalFunc);
+  mainImg.src = src;
 
-//Activating Filter Select and filtering options
-
-const select = document.querySelector('[data-select]');
-const selectItems = document.querySelectorAll('[data-select-item]');
-const selectValue = document.querySelector('[data-select-value]');
-const filterBtn = document.querySelectorAll('[data-filter-btn]');
-
-select.addEventListener('click', function () {elementToggleFunc(this); });
-
-for(let i = 0; i < selectItems.length; i++) {
-    selectItems[i].addEventListener('click', function() {
-
-        let selectedValue = this.innerText.toLowerCase();
-        selectValue.innerText = this.innerText;
-        elementToggleFunc(select);
-        filterFunc(selectedValue);
-
-    });
-}
-
-const filterItems = document.querySelectorAll('[data-filter-item]');
-
-const filterFunc = function (selectedValue) {
-    for(let i = 0; i < filterItems.length; i++) {
-        if(selectedValue == "all") {
-            filterItems[i].classList.add('active');
-        } else if (selectedValue == filterItems[i].dataset.category) {
-            filterItems[i].classList.add('active');
-        } else {
-            filterItems[i].classList.remove('active');
-        }
+  thumbs.forEach((img,i)=>{
+    if(img.getAttribute("src") === src){
+      currentIndex[galleryNumber] = i;
+      highlightThumb(galleryNumber,i);
     }
+  });
+
 }
 
-//Enabling filter button for larger screens 
 
-let lastClickedBtn = filterBtn[0];
+// arrow navigation
+function scrollThumbnails(galleryNumber, direction){
 
-for (let i = 0; i < filterBtn.length; i++) {
-    
-    filterBtn[i].addEventListener('click', function() {
+  const container = document.getElementById(`thumbs-${galleryNumber}`);
+  const thumbs = container.querySelectorAll("img");
 
-        let selectedValue = this.innerText.toLowerCase();
-        selectValue.innerText = this.innerText;
-        filterFunc(selectedValue);
+  if(!(galleryNumber in currentIndex)){
+    currentIndex[galleryNumber] = 0;
+  }
 
-        lastClickedBtn.classList.remove('active');
-        this.classList.add('active');
-        lastClickedBtn = this;
+  let index = currentIndex[galleryNumber] + direction;
 
-    })
-}
+  // LOOP
+  if(index >= thumbs.length){
 
-// Enabling Contact Form
+    index = 0;
+    container.scrollTo({left:0, behavior:"smooth"});
 
-const form = document.querySelector('[data-form]');
-const formInputs = document.querySelectorAll('[data-form-input]');
-const formBtn = document.querySelector('[data-form-btn]');
+  }
+  else if(index < 0){
 
-for(let i = 0; i < formInputs.length; i++) {
-    formInputs[i].addEventListener('input', function () {
-        if(form.checkValidity()) {
-            formBtn.removeAttribute('disabled');
-        } else { 
-            formBtn.setAttribute('disabled', '');
-        }
-    })
-}
+    index = thumbs.length - 1;
+    container.scrollTo({left:container.scrollWidth, behavior:"smooth"});
 
-// Enabling Page Navigation 
+  }
+  else{
 
-const navigationLinks = document.querySelectorAll('[data-nav-link]');
-const pages = document.querySelectorAll('[data-page]');
-
-for(let i = 0; i < navigationLinks.length; i++) {
-    navigationLinks[i].addEventListener('click', function() {
-        
-        for(let i = 0; i < pages.length; i++) {
-            if(this.innerHTML.toLowerCase() == pages[i].dataset.page) {
-                pages[i].classList.add('active');
-                navigationLinks[i].classList.add('active');
-                window.scrollTo(0, 0);
-            } else {
-                pages[i].classList.remove('active');
-                navigationLinks[i]. classList.remove('active');
-            }
-        }
+    container.scrollBy({
+      left: direction * 160,
+      behavior: "smooth"
     });
+
+  }
+
+  currentIndex[galleryNumber] = index;
+
+  const newSrc = thumbs[index].getAttribute("src");
+  document.getElementById(`main-img-${galleryNumber}`).src = newSrc;
+
+  highlightThumb(galleryNumber,index);
+
 }
+
+
+// set first thumbnail active on load
+window.addEventListener("load",()=>{
+
+  document.querySelectorAll(".thumbnails").forEach((thumbContainer,i)=>{
+
+    const galleryNumber = i+1;
+    const thumbs = thumbContainer.querySelectorAll("img");
+
+    if(thumbs.length){
+      currentIndex[galleryNumber] = 0;
+      highlightThumb(galleryNumber,0);
+    }
+
+  });
+
+});
+// VIDEO POPUP SYSTEM (skip gif-video)
+
+document.querySelectorAll("video:not(.gif-video)").forEach(video => {
+
+  video.addEventListener("play", function(){
+
+    // pause the original
+    video.pause();
+
+    // create overlay
+    const overlay = document.createElement("div");
+    overlay.classList.add("video-overlay");
+
+    // clone video
+    const popupVideo = video.cloneNode(true);
+    popupVideo.controls = true;
+
+    overlay.appendChild(popupVideo);
+    document.body.appendChild(overlay);
+
+    popupVideo.play();
+
+    // close when clicking outside
+    overlay.addEventListener("click", function(e){
+
+      if(e.target === overlay){
+        popupVideo.pause();
+        overlay.remove();
+      }
+
+    });
+
+  });
+
+});
